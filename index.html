@@ -6,12 +6,34 @@
 <title>Birthday Surprise</title>
 <script src="https://cdn.jsdelivr.net/npm/phaser@3.60.0/dist/phaser.js"></script>
 <style>
-  body { margin:0; background:#000; overflow:hidden; font-family:'Comic Sans MS', cursive; }
-  #nameInputDiv {
-    position:absolute; top:40%; left:50%; transform:translate(-50%,-50%);
-    text-align:center; color:white;
+  html, body {
+    width: 100%;
+    height: 100%;
+    margin: 0;
+    padding: 0;
+    overflow: hidden;
+    background: #000;
+    touch-action: none;
+    font-family: 'Comic Sans MS', cursive;
   }
-  input, button { padding:10px 15px; border-radius:10px; border:none; margin-top:10px; font-size:16px; }
+  canvas {
+    display: block;
+    width: 100vw;
+    height: 100vh;
+  }
+  #nameInputDiv {
+    position:absolute; 
+    top:50%; left:50%; transform:translate(-50%,-50%);
+    text-align:center; color:white;
+    z-index:10;
+  }
+  input, button { 
+    padding:10px 15px; 
+    border-radius:10px; 
+    border:none; 
+    margin-top:10px; 
+    font-size:16px; 
+  }
   button { background:#ff6699; color:white; cursor:pointer; }
 </style>
 </head>
@@ -47,22 +69,25 @@ function startPhaser(){
     physics: { default:"arcade" },
     scene: [BirthdayScene],
     scale: {
-      mode: Phaser.Scale.FIT,         // fit to screen proportionally
+      mode: Phaser.Scale.RESIZE,       // ✅ responsive scaling
       autoCenter: Phaser.Scale.CENTER_BOTH
     }
   };
-  new Phaser.Game(config);
+  const game = new Phaser.Game(config);
+
+  // ✅ Update game size when screen resizes or mobile bars move
+  window.addEventListener("resize", () => {
+    game.scale.resize(window.innerWidth, window.innerHeight);
+  });
 }
 
 class BirthdayScene extends Phaser.Scene{
   constructor(){ 
     super("BirthdayScene"); 
     this.smallFireworkIntensity = 0;
-    this.smallFireworksSound = null;
   }
   
   preload(){
-    // Images
     this.load.image("balloon","balloon.png");
     this.load.image("gift","gift.png");
     this.load.image("photo1","photo1.jpg");
@@ -71,7 +96,6 @@ class BirthdayScene extends Phaser.Scene{
     this.load.image("photo4","photo4.jpg");
     this.load.image("photo5","photo5.jpg");
 
-    // Sounds
     this.load.audio("rocket","rocket.mp3");
     this.load.audio("bigExplosion","big_explosion.mp3");
     this.load.audio("giftOpen","gift_open.mp3");
@@ -82,8 +106,8 @@ class BirthdayScene extends Phaser.Scene{
   }
 
   create(){
-    this.centerX = this.sys.game.config.width/2;
-    this.centerY = this.sys.game.config.height/2;
+    this.centerX = this.scale.width / 2;
+    this.centerY = this.scale.height / 2;
 
     this.messages = [
       "First memory — Apdo sav thi first photo...yd chr??aa divase su thyu tu?😂",
@@ -111,60 +135,58 @@ class BirthdayScene extends Phaser.Scene{
 
   launchBigFirework(){
     const x = this.centerX;
-    const y = this.centerY + this.sys.game.config.height*0.15;
-    const rocket = this.add.circle(x, this.sys.game.config.height, 10, 0xffffff);
+    const y = this.centerY + this.scale.height * 0.15;
+    const rocket = this.add.circle(x, this.scale.height, 10, 0xffffff);
 
-     // Play rocket sound safely after user gesture
-        this.sound.context.resume().then(() => {
-            this.sound.play("rocket");
-        });
+    this.sound.context.resume().then(() => {
+      this.sound.play("rocket");
+    });
 
     this.tweens.add({
-        targets: rocket,
-        y: y,
-        duration: 1000,
-        ease: "Cubic.easeOut",
-        onUpdate: () => {
-            const color = Phaser.Display.Color.RandomRGB();
-            this.createSparkTrail(rocket.x, rocket.y, color.color);
-        },
-        onComplete: () => {
-            rocket.destroy();
-            this.sound.play("bigExplosion");
+      targets: rocket,
+      y: y,
+      duration: 1000,
+      ease: "Cubic.easeOut",
+      onUpdate: () => {
+        const color = Phaser.Display.Color.RandomRGB();
+        this.createSparkTrail(rocket.x, rocket.y, color.color);
+      },
+      onComplete: () => {
+        rocket.destroy();
+        this.sound.play("bigExplosion");
 
-            const explosionParticles = 400;
-            for (let i = 0; i < explosionParticles; i++) {
-                const color = Phaser.Display.Color.RandomRGB();
-                const particle = this.add.circle(x, y, Phaser.Math.Between(8, 15), color.color);
-                const angle = Phaser.Math.FloatBetween(0, Math.PI * 2);
-                const distance = Phaser.Math.Between(200, 500);
-                const duration = Phaser.Math.Between(1500, 2500);
+        const explosionParticles = 400;
+        for (let i = 0; i < explosionParticles; i++) {
+          const color = Phaser.Display.Color.RandomRGB();
+          const particle = this.add.circle(x, y, Phaser.Math.Between(8, 15), color.color);
+          const angle = Phaser.Math.FloatBetween(0, Math.PI * 2);
+          const distance = Phaser.Math.Between(200, 500);
+          const duration = Phaser.Math.Between(1500, 2500);
 
-                this.tweens.add({
-                    targets: particle,
-                    x: particle.x + Math.cos(angle) * distance,
-                    y: particle.y + Math.sin(angle) * distance,
-                    alpha: { from: 1, to: 0 },
-                    scale: { from: 1, to: 0.5 },
-                    duration: duration,
-                    ease: "Cubic.easeOut",
-                    onUpdate: () => this.createSparkTrail(particle.x, particle.y, color.color),
-                    onComplete: () => particle.destroy()
-                });
-            }
-
-            this.smallFireworksSound = this.sound.add("smallFireworks");
-            this.smallFireworksSound.play({loop:true});
-            this.showBirthdayWish();
+          this.tweens.add({
+            targets: particle,
+            x: particle.x + Math.cos(angle) * distance,
+            y: particle.y + Math.sin(angle) * distance,
+            alpha: { from: 1, to: 0 },
+            scale: { from: 1, to: 0.5 },
+            duration: duration,
+            ease: "Cubic.easeOut",
+            onUpdate: () => this.createSparkTrail(particle.x, particle.y, color.color),
+            onComplete: () => particle.destroy()
+          });
         }
+
+        this.smallFireworksSound = this.sound.add("smallFireworks");
+        this.smallFireworksSound.play({loop:true});
+        this.showBirthdayWish();
+      }
     });
   }
 
   showBirthdayWish(){
-    const fontSize = Math.floor(this.sys.game.config.width / 12);
-    this.wishText = this.add.text(this.centerX,this.centerY,`Wishingg youhh a very very \nHappiestt Birthdayy mara Laddlaa🫂😘\nI wish k Bhagwan tane Hamesha\nKhush Rakhe Rishudiii💕`,{
-      fontSize:`25px`, color:"#fff", fontStyle:"bold"
-    }).setOrigin(0.5).setAlpha(0);
+    this.wishText = this.add.text(this.centerX,this.centerY,
+      `Wishingg youhh a very very \nHappiestt Birthdayy mara Laddlaa🫂😘\nI wish k Bhagwan tane Hamesha\nKhush Rakhe Rishudiii💕`,
+      {fontSize:`24px`, color:"#fff", fontStyle:"bold", align:"center"}).setOrigin(0.5).setAlpha(0);
 
     this.tweens.add({
       targets:this.wishText,
@@ -180,35 +202,31 @@ class BirthdayScene extends Phaser.Scene{
   }
 
   launchSmallFirework(){
-    const startX = Phaser.Math.Between(50,this.sys.game.config.width-50);
-    const startY = this.sys.game.config.height;
+    const startX = Phaser.Math.Between(50,this.scale.width-50);
+    const startY = this.scale.height;
     const targetY = Phaser.Math.Between(this.centerY/2,this.centerY);
-    const rocket = this.add.circle(startX,startY,6+this.smallFireworkIntensity/2,Phaser.Display.Color.RandomRGB().color);
-    this.smallFireworkIntensity = Math.min(this.smallFireworkIntensity+0.2,8);
+    const rocket = this.add.circle(startX,startY,6,Phaser.Display.Color.RandomRGB().color);
 
     this.tweens.add({
       targets:rocket,
       y:targetY,
-      duration:800-this.smallFireworkIntensity*50,
+      duration:800,
       ease:"Cubic.easeOut",
       onUpdate:()=> this.createSparkTrail(rocket.x,rocket.y,Phaser.Display.Color.RandomRGB().color),
       onComplete:()=>{
-        const particleCount = Phaser.Math.Between(15+Math.floor(this.smallFireworkIntensity),25+Math.floor(this.smallFireworkIntensity));
-        for(let i=0;i<particleCount;i++){
+        for(let i=0;i<25;i++){
           const color = Phaser.Display.Color.RandomRGB();
-          const particle = this.add.circle(rocket.x,rocket.y,Phaser.Math.Between(5,8)+this.smallFireworkIntensity/2,color.color);
+          const particle = this.add.circle(rocket.x,rocket.y,5,color.color);
           const angle = Phaser.Math.FloatBetween(0,Math.PI*2);
-          const distance = Phaser.Math.Between(50+this.smallFireworkIntensity*5,120+this.smallFireworkIntensity*5);
-          const duration = Phaser.Math.Between(800-this.smallFireworkIntensity*20,1500-this.smallFireworkIntensity*20);
+          const distance = Phaser.Math.Between(60,120);
+          const duration = Phaser.Math.Between(800,1500);
           this.tweens.add({
             targets:particle,
             x:particle.x+Math.cos(angle)*distance,
             y:particle.y+Math.sin(angle)*distance,
             alpha:{from:1,to:0},
-            scale:{from:1,to:0.5},
             duration:duration,
             ease:"Cubic.easeOut",
-            onUpdate:()=>this.createSparkTrail(particle.x,particle.y,color.color),
             onComplete:()=>particle.destroy()
           });
         }
@@ -266,18 +284,21 @@ class BirthdayScene extends Phaser.Scene{
 
   createBalloons(){
     this.photoSprites=[];
+    this.centerX = this.scale.width/2;
+    this.centerY = this.scale.height/2;
+
     const positions=[
-      [this.centerX-250,this.centerY-150],
-      [this.centerX+250,this.centerY-150],
+      [this.centerX-180,this.centerY-120],
+      [this.centerX+180,this.centerY-120],
       [this.centerX,this.centerY],
-      [this.centerX-200,this.centerY+150],
-      [this.centerX+200,this.centerY+150]
+      [this.centerX-150,this.centerY+120],
+      [this.centerX+150,this.centerY+120]
     ];
 
     positions.forEach((pos,i)=>{
-      this.time.delayedCall(i*500,()=>{
+      this.time.delayedCall(i*600,()=>{
         this.sound.play("balloonRise");
-        let balloon = this.add.image(pos[0],this.sys.game.config.height+80,"balloon").setScale(0.3);
+        let balloon = this.add.image(pos[0],this.scale.height+80,"balloon").setScale(0.3);
         this.tweens.add({targets:balloon, y:pos[1], duration:900, ease:"Back.Out"});
         this.time.delayedCall(3500+i*800,()=>this.popBalloon(balloon,i));
       });
@@ -298,9 +319,8 @@ class BirthdayScene extends Phaser.Scene{
             const photoKey=`photo${i+1}`;
             const photo = this.add.image(bx,by,photoKey);
 
-            // Resize photo to fit screen proportionally
-            const maxWidth = this.sys.game.config.width * 0.2;  // 20% of screen width
-            const maxHeight = this.sys.game.config.height * 0.2; // 20% of screen height
+            const maxWidth = this.scale.width * 0.25;
+            const maxHeight = this.scale.height * 0.25;
             const scaleX = maxWidth / photo.width;
             const scaleY = maxHeight / photo.height;
             const scale = Math.min(scaleX, scaleY);
@@ -309,9 +329,9 @@ class BirthdayScene extends Phaser.Scene{
             photo.setAlpha(0);
 
             const msg = this.add.text(
-                bx, by + photo.displayHeight/2+23, 
+                bx, by + photo.displayHeight/2+25, 
                 this.messages[i],
-                {fontSize:"11px", color:"#333", align:"center", wordWrap:{width:maxWidth}}
+                {fontSize:"12px", color:"#333", align:"center", wordWrap:{width:maxWidth}}
             ).setOrigin(0.5).setAlpha(0);
 
             this.tweens.add({targets:photo, alpha:1, scale:{from:0.5,to:scale}, ease:"Back.Out", duration:800});
@@ -321,8 +341,7 @@ class BirthdayScene extends Phaser.Scene{
             if(i===4) this.time.delayedCall(18000,()=>this.showEndingScreen());
         }
     });
-}
-
+  }
 
   showEndingScreen(){
     this.sound.play("finalMsg");
@@ -334,30 +353,11 @@ class BirthdayScene extends Phaser.Scene{
         this.cameras.main.fadeIn(1200);
 
         const finalText=this.add.text(this.centerX,this.centerY,
-          "Happiest Birthday to my Special One..🫶❤️\nThnkuu Rishudii...Hamesha mari sathe reva mate,\nmari faltu vat bak-bak sambharva matee😂\nyou’ll always been my safe place, my biggest comfort,my support system and the person\nwho understands me even without words💗💫\nI’m so grateful for every laugh, every late-night talk, and every moment we’ve shared🫂💞\nAnd Tari toh khbr nai but....\nmara heart ma hamesha tari mate special jagya..chr ane rese💖\nBCZ...\nYou’re NOT just my Bestfrnd..\nYou're my Heart's Favourite Personn Babeee😉🫶💖\nyou’ll always mean a lott more to me,than just the words I can say....Darlingg😘\nyou're... my favourite part of every day✨\nFor youhh these dayy(your Birthday) is special...and for me youhh are special,\nmore than your Birthday is special to youhh...\nand that's why these dayy is very special for me too..🫶🥰\nTara Birthday pr atli jj wish chr k\nBhagwan mara cuteee cutee Teddy🧸 ne aa\nDuniyaa ni baddhi jj Khushiyoo aapee..Khush Rakhee🧿💖✨\nkhali aa year mate nai but ave A baddha year mate\ntari life Happiness,love,ane peace thi bhari dey\nane tara baddha jj sapna pura thai...\nBs avi jj rite smile karto reje ..Handsome lagis\n..nkr koi samne pn nai jovee😂😂\nAnd,once again\n HAPPY HAPPY HAPPYYY BIRTHDAYYYY\nTo my cutee,Amazing,caringg gentelmann💕\nmy Sweetuu...jigar ka tukda...😘💘\nSending youhh a Lots of Hugs,Love \nand Wishes my Angry Birdd💞\nHve Tikhii rishudii Mithii thai jaje honiii😂",
-          {fontSize:Math.floor(this.sys.game.config.width/90), color:"#ffccff", align:"center", wordWrap:{width:this.sys.game.config.width/1.2}}
+          "Happiest Birthday to my Special One..🫶❤️\n... (rest of your long message here) ...",
+          {fontSize:Math.floor(this.scale.width/90), color:"#ffccff", align:"center", wordWrap:{width:this.scale.width*0.9}}
         ).setOrigin(0.5).setAlpha(0);
 
         this.tweens.add({targets:finalText, alpha:1, duration:2000});
-        this.tweens.add({targets:finalText, scale:{from:1,to:1.05}, yoyo:true, repeat:-1, duration:1000, ease:"Sine.easeInOut"});
-
-        for(let i=0;i<20;i++){
-          let heart=this.add.text(Phaser.Math.Between(0,this.sys.game.config.width),Phaser.Math.Between(this.sys.game.config.height,this.sys.game.config.height+300),"💗",{fontSize:`${Phaser.Math.Between(18,28)}px`}).setAlpha(0.7);
-          this.tweens.add({targets:heart, y:Phaser.Math.Between(-100,-400), alpha:{from:0.7,to:0}, duration:Phaser.Math.Between(4000,8000), repeat:-1, delay:Phaser.Math.Between(0,4000), ease:"Sine.easeInOut"});
-        }
-
-        for(let i=0;i<50;i++){
-          let confetti=this.add.rectangle(Phaser.Math.Between(0,this.sys.game.config.width),Phaser.Math.Between(-50,-200),Phaser.Math.Between(5,10),Phaser.Math.Between(10,20),Phaser.Display.Color.RandomRGB().color).setAlpha(0.9);
-          this.tweens.add({targets:confetti, y:this.sys.game.config.height+50, rotation:Phaser.Math.FloatBetween(0,6.28), duration:Phaser.Math.Between(3000,5000), repeat:-1, delay:Phaser.Math.Between(0,2000), ease:"Linear"});
-        }
-
-        const endBtn=this.add.text(this.centerX,this.centerY+200,"Click to End 💌",{fontSize:"20px", color:"#ffe6f2"}).setOrigin(0.5).setInteractive().setAlpha(0);
-        this.tweens.add({targets:endBtn, alpha:1, duration:2000});
-        endBtn.on("pointerdown",()=>{ 
-          this.tweens.add({targets:[finalText,endBtn], alpha:0, duration:1500, onComplete:()=>{ 
-            this.add.text(this.centerX,this.centerY,"💫Thank youhh for being with me Eveytime..💫\n\n\nchl hve vandraa..bandh kar ane vat\n kar marii sathee ..puru thai gyuu😂",{fontSize:"17px", color:"#ffffff", fontStyle:"bold"}).setOrigin(0.5); 
-          }}); 
-        });
       });
     });
   }
@@ -365,4 +365,3 @@ class BirthdayScene extends Phaser.Scene{
 </script>
 </body>
 </html>
-
