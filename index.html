@@ -311,7 +311,7 @@ class BirthdayScene extends Phaser.Scene{
             const msg = this.add.text(
                 bx, by + photo.displayHeight/2+23, 
                 this.messages[i],
-                {fontSize:"14px", color:"#333", align:"center", wordWrap:{width:maxWidth-10}}
+                {fontSize:"14px", color:"#333", align:"center", wordWrap:{width:maxWidth-5}}
             ).setOrigin(0.5).setAlpha(0);
 
             this.tweens.add({targets:photo, alpha:1, scale:{from:0.5,to:scale}, ease:"Back.Out", duration:800});
@@ -351,7 +351,7 @@ class BirthdayScene extends Phaser.Scene{
           this.tweens.add({targets:confetti, y:this.sys.game.config.height+50, rotation:Phaser.Math.FloatBetween(0,6.28), duration:Phaser.Math.Between(3000,5000), repeat:-1, delay:Phaser.Math.Between(0,2000), ease:"Linear"});
         }
 
-        const endBtn=this.add.text(this.centerX,this.centerY+550,"Click to End 💌",{fontSize:"20px", color:"#ffe6f2"}).setOrigin(0.5).setInteractive().setAlpha(0);
+        const endBtn=this.add.text(this.centerX,this.centerY+400,"Click to End 💌",{fontSize:"20px", color:"#ffe6f2"}).setOrigin(0.5).setInteractive().setAlpha(0);
         this.tweens.add({targets:endBtn, alpha:1, duration:2000});
         endBtn.on("pointerdown",()=>{ 
           this.tweens.add({targets:[finalText,endBtn], alpha:0, duration:1500, onComplete:()=>{ 
@@ -365,6 +365,7 @@ class BirthdayScene extends Phaser.Scene{
 </script>
 </body>
 </html>
+
 
 
 
