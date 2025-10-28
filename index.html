@@ -1,0 +1,366 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no" />
+<title>Birthday Surprise</title>
+<script src="https://cdn.jsdelivr.net/npm/phaser@3.60.0/dist/phaser.js"></script>
+<style>
+  body { margin:0; background:#000; overflow:hidden; font-family:'Comic Sans MS', cursive; }
+  #nameInputDiv {
+    position:absolute; top:40%; left:50%; transform:translate(-50%,-50%);
+    text-align:center; color:white;
+  }
+  input, button { padding:10px 15px; border-radius:10px; border:none; margin-top:10px; font-size:16px; }
+  button { background:#ff6699; color:white; cursor:pointer; }
+</style>
+</head>
+<body>
+<div id="nameInputDiv">
+  <h2>Welcomee ji!!🎈<br>Avi gyo emne Rishudaa😹<br>chl hve "mara Teddy" nu name enter kar<br>ane Aagad jo babyy😉</h2>
+  <input type="text" id="nameInput" placeholder="name..."><br>
+  <button id="startBtn">go for Surprise✨</button>
+  <p id="error" style="color:red"></p>
+</div>
+
+<script>
+let playerName = "";
+const correctName = "Rishit";
+
+document.getElementById("startBtn").onclick = () => {
+  const nameValue = document.getElementById("nameInput").value.trim();
+  if(nameValue.toLowerCase() === correctName.toLowerCase()){
+    playerName = nameValue;
+    document.getElementById("nameInputDiv").style.display = "none";
+    startPhaser();
+  } else {
+    document.getElementById("error").innerText = "You are not my best friend!😡" ;
+  }
+};
+
+function startPhaser(){
+  const config = {
+    type: Phaser.AUTO,
+    width: window.innerWidth,
+    height: window.innerHeight,
+    backgroundColor:"#000000",
+    physics: { default:"arcade" },
+    scene: [BirthdayScene],
+    scale: {
+      mode: Phaser.Scale.FIT,         // fit to screen proportionally
+      autoCenter: Phaser.Scale.CENTER_BOTH
+    }
+  };
+  new Phaser.Game(config);
+}
+
+class BirthdayScene extends Phaser.Scene{
+  constructor(){ 
+    super("BirthdayScene"); 
+    this.smallFireworkIntensity = 0;
+    this.smallFireworksSound = null;
+  }
+  
+  preload(){
+    // Images
+    this.load.image("balloon","balloon.png");
+    this.load.image("gift","gift.png");
+    this.load.image("photo1","photo1.jpg");
+    this.load.image("photo2","photo2.jpg");
+    this.load.image("photo3","photo3.jpg");
+    this.load.image("photo4","photo4.jpg");
+    this.load.image("photo5","photo5.jpg");
+
+    // Sounds
+    this.load.audio("rocket","rocket.mp3");
+    this.load.audio("bigExplosion","big_explosion.mp3");
+    this.load.audio("giftOpen","gift_open.mp3");
+    this.load.audio("balloonRise","balloon_rise.mp3");
+    this.load.audio("balloonPop","balloon_pop.mp3");
+    this.load.audio("finalMsg","final_msg.mp3");
+  }
+
+  create(){
+    this.centerX = this.sys.game.config.width/2;
+    this.centerY = this.sys.game.config.height/2;
+
+    this.messages = [
+      "First memory — Apdo sav thi first photo...yd chr??aa divase su thyu tu?😂",
+      "Mara Rishudaa ni First Birthdayyy..❤️",
+      "Winkk.. First timee😂..Tyare kevo sharmato tu wink karvama😂",
+      "Tyare kya khbr hati k atlo saro bond bani jasee...my sukoon🫶",
+      "And now its 3rd year and you're still...holding a very special place in my heart💞"
+    ];
+
+    this.launchBigFirework();
+  }
+
+  createSparkTrail(x,y,color){
+    const spark = this.add.circle(x,y,Phaser.Math.Between(1,3),color).setAlpha(0.9);
+    this.tweens.add({
+      targets:spark,
+      x:x+Phaser.Math.Between(-15,15),
+      y:y+Phaser.Math.Between(-15,15),
+      alpha:{from:0.9,to:0},
+      scale:{from:1,to:0.2},
+      duration:Phaser.Math.Between(300,600),
+      onComplete:()=>spark.destroy()
+    });
+  }
+
+  launchBigFirework(){
+    const x = this.centerX;
+    const y = this.centerY + this.sys.game.config.height*0.15;
+    const rocket = this.add.circle(x, this.sys.game.config.height, 10, 0xffffff);
+
+     // Play rocket sound safely after user gesture
+        this.sound.context.resume().then(() => {
+            this.sound.play("rocket");
+        });
+
+    this.tweens.add({
+        targets: rocket,
+        y: y,
+        duration: 1000,
+        ease: "Cubic.easeOut",
+        onUpdate: () => {
+            const color = Phaser.Display.Color.RandomRGB();
+            this.createSparkTrail(rocket.x, rocket.y, color.color);
+        },
+        onComplete: () => {
+            rocket.destroy();
+            this.sound.play("bigExplosion");
+
+            const explosionParticles = 400;
+            for (let i = 0; i < explosionParticles; i++) {
+                const color = Phaser.Display.Color.RandomRGB();
+                const particle = this.add.circle(x, y, Phaser.Math.Between(8, 15), color.color);
+                const angle = Phaser.Math.FloatBetween(0, Math.PI * 2);
+                const distance = Phaser.Math.Between(200, 500);
+                const duration = Phaser.Math.Between(1500, 2500);
+
+                this.tweens.add({
+                    targets: particle,
+                    x: particle.x + Math.cos(angle) * distance,
+                    y: particle.y + Math.sin(angle) * distance,
+                    alpha: { from: 1, to: 0 },
+                    scale: { from: 1, to: 0.5 },
+                    duration: duration,
+                    ease: "Cubic.easeOut",
+                    onUpdate: () => this.createSparkTrail(particle.x, particle.y, color.color),
+                    onComplete: () => particle.destroy()
+                });
+            }
+
+            this.smallFireworksSound = this.sound.add("smallFireworks");
+            this.smallFireworksSound.play({loop:true});
+            this.showBirthdayWish();
+        }
+    });
+  }
+
+  showBirthdayWish(){
+    const fontSize = Math.floor(this.sys.game.config.width / 12);
+    this.wishText = this.add.text(this.centerX,this.centerY,`Wishingg youhh a very very \nHappiestt Birthdayy mara Laddlaa🫂😘\nI wish k Bhagwan tane Hamesha\nKhush Rakhe Rishudiii💕`,{
+      fontSize:`25px`, color:"#fff", fontStyle:"bold"
+    }).setOrigin(0.5).setAlpha(0);
+
+    this.tweens.add({
+      targets:this.wishText,
+      alpha:1,
+      duration:2000,
+      onComplete:()=> {
+        this.smallFireworksTimer = this.time.addEvent({
+          delay:300, loop:true, callback:()=>this.launchSmallFirework()
+        });
+        this.time.delayedCall(7000,()=>this.showWaitMessages());
+      }
+    });
+  }
+
+  launchSmallFirework(){
+    const startX = Phaser.Math.Between(50,this.sys.game.config.width-50);
+    const startY = this.sys.game.config.height;
+    const targetY = Phaser.Math.Between(this.centerY/2,this.centerY);
+    const rocket = this.add.circle(startX,startY,6+this.smallFireworkIntensity/2,Phaser.Display.Color.RandomRGB().color);
+    this.smallFireworkIntensity = Math.min(this.smallFireworkIntensity+0.2,8);
+
+    this.tweens.add({
+      targets:rocket,
+      y:targetY,
+      duration:800-this.smallFireworkIntensity*50,
+      ease:"Cubic.easeOut",
+      onUpdate:()=> this.createSparkTrail(rocket.x,rocket.y,Phaser.Display.Color.RandomRGB().color),
+      onComplete:()=>{
+        const particleCount = Phaser.Math.Between(15+Math.floor(this.smallFireworkIntensity),25+Math.floor(this.smallFireworkIntensity));
+        for(let i=0;i<particleCount;i++){
+          const color = Phaser.Display.Color.RandomRGB();
+          const particle = this.add.circle(rocket.x,rocket.y,Phaser.Math.Between(5,8)+this.smallFireworkIntensity/2,color.color);
+          const angle = Phaser.Math.FloatBetween(0,Math.PI*2);
+          const distance = Phaser.Math.Between(50+this.smallFireworkIntensity*5,120+this.smallFireworkIntensity*5);
+          const duration = Phaser.Math.Between(800-this.smallFireworkIntensity*20,1500-this.smallFireworkIntensity*20);
+          this.tweens.add({
+            targets:particle,
+            x:particle.x+Math.cos(angle)*distance,
+            y:particle.y+Math.sin(angle)*distance,
+            alpha:{from:1,to:0},
+            scale:{from:1,to:0.5},
+            duration:duration,
+            ease:"Cubic.easeOut",
+            onUpdate:()=>this.createSparkTrail(particle.x,particle.y,color.color),
+            onComplete:()=>particle.destroy()
+          });
+        }
+        rocket.destroy();
+      }
+    });
+  }
+
+  showWaitMessages(){
+    this.tweens.add({targets:this.wishText, alpha:0, duration:1000});
+    const messages=["wait...","wait...","wait..✋","here's something for youhh my darlingg❤️"];
+    let yPos=this.centerY, delay=1700;
+    messages.forEach((msg,i)=> this.time.delayedCall(delay*(i+1),()=>this.typeMessage(msg,yPos)));
+  }
+
+  typeMessage(msg,yPos){
+    if(this.messageText) this.messageText.destroy();
+    this.messageText = this.add.text(this.centerX,yPos,"",{fontSize:"30px",color:"#fff",fontStyle:"bold"}).setOrigin(0.5);
+    let idx=0;
+    this.time.addEvent({
+      delay:100,
+      callback:()=>{
+        this.messageText.text+=msg[idx];
+        idx++;
+        if(idx>=msg.length && msg.includes("darlingg")){
+          this.time.delayedCall(1000,()=>this.showGiftButton());
+        }
+      },
+      repeat:msg.length-1
+    });
+  }
+
+  showGiftButton(){
+    this.messageText.setAlpha(0);
+    this.gift = this.add.image(this.centerX,this.centerY,"gift").setScale(0.35).setInteractive();
+    this.giftMsg = this.add.text(this.centerX,this.centerY+200,"Click to open bebuuu😘",{fontSize:"22px",color:"#fff"}).setOrigin(0.5);
+    this.tweens.add({targets:this.gift, y:this.centerY-10, yoyo:true, repeat:-1, duration:800});
+
+    this.gift.on("pointerdown",()=>{
+      if(this.smallFireworksSound) this.smallFireworksSound.stop();
+      this.sound.play("giftOpen");
+      if(this.smallFireworksTimer) this.smallFireworksTimer.remove(false);
+      this.tweens.add({targets:[this.gift,this.giftMsg], alpha:0, duration:800, onComplete:()=>this.startBalloonScene()});
+    });
+  }
+
+  startBalloonScene(){
+    this.cameras.main.fadeOut(800,255,182,193);
+    this.time.delayedCall(900,()=>{
+      this.cameras.main.setBackgroundColor("#ffd6e7");
+      this.cameras.main.fadeIn(800);
+      this.createBalloons();
+    });
+  }
+
+  createBalloons(){
+    this.photoSprites=[];
+    const positions=[
+      [this.centerX-250,this.centerY-150],
+      [this.centerX+250,this.centerY-150],
+      [this.centerX,this.centerY],
+      [this.centerX-200,this.centerY+150],
+      [this.centerX+200,this.centerY+150]
+    ];
+
+    positions.forEach((pos,i)=>{
+      this.time.delayedCall(i*500,()=>{
+        this.sound.play("balloonRise");
+        let balloon = this.add.image(pos[0],this.sys.game.config.height+80,"balloon").setScale(0.3);
+        this.tweens.add({targets:balloon, y:pos[1], duration:900, ease:"Back.Out"});
+        this.time.delayedCall(3500+i*800,()=>this.popBalloon(balloon,i));
+      });
+    });
+  }
+
+  popBalloon(balloon,i){
+    const bx=balloon.x, by=balloon.y;
+    this.tweens.add({
+        targets:balloon,
+        scale:{from:0.3,to:0.6},
+        alpha:{from:1,to:0},
+        duration:500,
+        onComplete:()=>{
+            this.sound.play("balloonPop");
+            balloon.destroy();
+
+            const photoKey=`photo${i+1}`;
+            const photo = this.add.image(bx,by,photoKey);
+
+            // Resize photo to fit screen proportionally
+            const maxWidth = this.sys.game.config.width * 0.2;  // 20% of screen width
+            const maxHeight = this.sys.game.config.height * 0.2; // 20% of screen height
+            const scaleX = maxWidth / photo.width;
+            const scaleY = maxHeight / photo.height;
+            const scale = Math.min(scaleX, scaleY);
+            photo.setScale(scale);
+
+            photo.setAlpha(0);
+
+            const msg = this.add.text(
+                bx, by + photo.displayHeight/2+23, 
+                this.messages[i],
+                {fontSize:"11px", color:"#333", align:"center", wordWrap:{width:maxWidth}}
+            ).setOrigin(0.5).setAlpha(0);
+
+            this.tweens.add({targets:photo, alpha:1, scale:{from:0.5,to:scale}, ease:"Back.Out", duration:800});
+            this.tweens.add({targets:msg, alpha:1, duration:800});
+            this.photoSprites.push(photo,msg);
+
+            if(i===4) this.time.delayedCall(18000,()=>this.showEndingScreen());
+        }
+    });
+}
+
+
+  showEndingScreen(){
+    this.sound.play("finalMsg");
+    this.tweens.add({targets:this.photoSprites, alpha:0, duration:1700});
+    this.time.delayedCall(1500,()=>{
+      this.cameras.main.fadeOut(1000,255,214,231);
+      this.time.delayedCall(2400,()=>{
+        this.cameras.main.setBackgroundColor("#1a1333");
+        this.cameras.main.fadeIn(1200);
+
+        const finalText=this.add.text(this.centerX,this.centerY,
+          "Happiest Birthday to my Special One..🫶❤️\nThnkuu Rishudii...Hamesha mari sathe reva mate,\nmari faltu vat bak-bak sambharva matee😂\nyou’ll always been my safe place, my biggest comfort,my support system and the person\nwho understands me even without words💗💫\nI’m so grateful for every laugh, every late-night talk, and every moment we’ve shared🫂💞\nAnd Tari toh khbr nai but....\nmara heart ma hamesha tari mate special jagya..chr ane rese💖\nBCZ...\nYou’re NOT just my Bestfrnd..\nYou're my Heart's Favourite Personn Babeee😉🫶💖\nyou’ll always mean a lott more to me,than just the words I can say....Darlingg😘\nyou're... my favourite part of every day✨\nFor youhh these dayy(your Birthday) is special...and for me youhh are special,\nmore than your Birthday is special to youhh...\nand that's why these dayy is very special for me too..🫶🥰\nTara Birthday pr atli jj wish chr k\nBhagwan mara cuteee cutee Teddy🧸 ne aa\nDuniyaa ni baddhi jj Khushiyoo aapee..Khush Rakhee🧿💖✨\nkhali aa year mate nai but ave A baddha year mate\ntari life Happiness,love,ane peace thi bhari dey\nane tara baddha jj sapna pura thai...\nBs avi jj rite smile karto reje ..Handsome lagis\n..nkr koi samne pn nai jovee😂😂\nAnd,once again\n HAPPY HAPPY HAPPYYY BIRTHDAYYYY\nTo my cutee,Amazing,caringg gentelmann💕\nmy Sweetuu...jigar ka tukda...😘💘\nSending youhh a Lots of Hugs,Love \nand Wishes my Angry Birdd💞\nHve Tikhii rishudii Mithii thai jaje honiii😂",
+          {fontSize:Math.floor(this.sys.game.config.width/90), color:"#ffccff", align:"center", wordWrap:{width:this.sys.game.config.width/1.2}}
+        ).setOrigin(0.5).setAlpha(0);
+
+        this.tweens.add({targets:finalText, alpha:1, duration:2000});
+        this.tweens.add({targets:finalText, scale:{from:1,to:1.05}, yoyo:true, repeat:-1, duration:1000, ease:"Sine.easeInOut"});
+
+        for(let i=0;i<20;i++){
+          let heart=this.add.text(Phaser.Math.Between(0,this.sys.game.config.width),Phaser.Math.Between(this.sys.game.config.height,this.sys.game.config.height+300),"💗",{fontSize:`${Phaser.Math.Between(18,28)}px`}).setAlpha(0.7);
+          this.tweens.add({targets:heart, y:Phaser.Math.Between(-100,-400), alpha:{from:0.7,to:0}, duration:Phaser.Math.Between(4000,8000), repeat:-1, delay:Phaser.Math.Between(0,4000), ease:"Sine.easeInOut"});
+        }
+
+        for(let i=0;i<50;i++){
+          let confetti=this.add.rectangle(Phaser.Math.Between(0,this.sys.game.config.width),Phaser.Math.Between(-50,-200),Phaser.Math.Between(5,10),Phaser.Math.Between(10,20),Phaser.Display.Color.RandomRGB().color).setAlpha(0.9);
+          this.tweens.add({targets:confetti, y:this.sys.game.config.height+50, rotation:Phaser.Math.FloatBetween(0,6.28), duration:Phaser.Math.Between(3000,5000), repeat:-1, delay:Phaser.Math.Between(0,2000), ease:"Linear"});
+        }
+
+        const endBtn=this.add.text(this.centerX,this.centerY+200,"Click to End 💌",{fontSize:"20px", color:"#ffe6f2"}).setOrigin(0.5).setInteractive().setAlpha(0);
+        this.tweens.add({targets:endBtn, alpha:1, duration:2000});
+        endBtn.on("pointerdown",()=>{ 
+          this.tweens.add({targets:[finalText,endBtn], alpha:0, duration:1500, onComplete:()=>{ 
+            this.add.text(this.centerX,this.centerY,"💫Thank youhh for being with me Eveytime..💫\n\n\nchl hve vandraa..bandh kar ane vat\n kar marii sathee ..puru thai gyuu😂",{fontSize:"17px", color:"#ffffff", fontStyle:"bold"}).setOrigin(0.5); 
+          }}); 
+        });
+      });
+    });
+  }
+}
+</script>
+</body>
+</html>
