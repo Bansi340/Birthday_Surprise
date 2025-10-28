@@ -318,7 +318,7 @@ class BirthdayScene extends Phaser.Scene{
             this.tweens.add({targets:msg, alpha:1, duration:800});
             this.photoSprites.push(photo,msg);
 
-            if(i===4) this.time.delayedCall(18000,()=>this.showEndingScreen());
+            if(i===4) this.time.delayedCall(17000,()=>this.showEndingScreen());
         }
     });
 }
@@ -351,7 +351,7 @@ class BirthdayScene extends Phaser.Scene{
           this.tweens.add({targets:confetti, y:this.sys.game.config.height+50, rotation:Phaser.Math.FloatBetween(0,6.28), duration:Phaser.Math.Between(3000,5000), repeat:-1, delay:Phaser.Math.Between(0,2000), ease:"Linear"});
         }
 
-        const endBtn=this.add.text(this.centerX,this.centerY+200,"Click to End 💌",{fontSize:"20px", color:"#ffe6f2"}).setOrigin(0.5).setInteractive().setAlpha(0);
+        const endBtn=this.add.text(this.centerX,this.centerY+300,"Click to End 💌",{fontSize:"20px", color:"#ffe6f2"}).setOrigin(0.5).setInteractive().setAlpha(0);
         this.tweens.add({targets:endBtn, alpha:1, duration:2000});
         endBtn.on("pointerdown",()=>{ 
           this.tweens.add({targets:[finalText,endBtn], alpha:0, duration:1500, onComplete:()=>{ 
@@ -365,3 +365,4 @@ class BirthdayScene extends Phaser.Scene{
 </script>
 </body>
 </html>
+
